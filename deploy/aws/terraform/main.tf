@@ -18,7 +18,7 @@ data "aws_availability_zones" "available" {
 
 locals {
   azs      = slice(data.aws_availability_zones.available.names, 0, 2)
-  services = ["user", "knowledge", "planner", "notification", "llm-gateway", "ui"]
+  services = ["user", "knowledge", "planner", "notification", "llm-gateway", "open-webui-engine", "ui"]
 }
 
 module "vpc" {
@@ -161,4 +161,64 @@ resource "aws_iam_role" "notification" {
 resource "aws_iam_role_policy_attachment" "notification_ses" {
   role       = aws_iam_role.notification.name
   policy_arn = aws_iam_policy.ses.arn
+}
+
+data "aws_caller_identity" "current" {}
+
+resource "aws_s3_bucket" "docs" {
+  bucket = "${var.cluster_name}-docs-${data.aws_caller_identity.current.account_id}"
+}
+
+resource "aws_s3_bucket_public_access_block" "docs" {
+  bucket                  = aws_s3_bucket.docs.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+data "aws_iam_policy_document" "engine_s3" {
+  statement {
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.docs.arn]
+  }
+  statement {
+    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = ["${aws_s3_bucket.docs.arn}/*"]
+  }
+}
+
+resource "aws_iam_policy" "engine_s3" {
+  name   = "${var.cluster_name}-engine-s3"
+  policy = data.aws_iam_policy_document.engine_s3.json
+}
+
+data "aws_iam_policy_document" "engine_assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [module.eks.oidc_provider_arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:atlas:open-webui-engine"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "engine" {
+  name               = "${var.cluster_name}-engine"
+  assume_role_policy = data.aws_iam_policy_document.engine_assume.json
+}
+
+resource "aws_iam_role_policy_attachment" "engine_s3" {
+  role       = aws_iam_role.engine.name
+  policy_arn = aws_iam_policy.engine_s3.arn
 }

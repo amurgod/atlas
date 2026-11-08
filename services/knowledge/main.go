@@ -55,8 +55,8 @@ func main() {
 	mux.HandleFunc("DELETE /v1/documents/{id}", httpx.RequirePerm(auth.PermKnowledgeWrite, h.deleteDoc))
 	mux.HandleFunc("POST /v1/search", httpx.RequirePerm(auth.PermKnowledgeRead, h.search))
 	mux.HandleFunc("POST /v1/chat", httpx.RequirePerm(auth.PermKnowledgeRead, h.chat))
-	mux.HandleFunc("POST /v1/chat/public", h.publicChat)
-	mux.HandleFunc("POST /v1/tools", h.tools)
+	mux.HandleFunc("POST /v1/chat/public", httpx.RequirePerm(auth.PermKnowledgeRead, h.publicChat))
+	mux.HandleFunc("POST /v1/tools", httpx.RequirePerm(auth.PermKnowledgeRead, h.tools))
 
 	if err := httpx.Serve(httpx.Middleware(config.Must("JWT_SECRET"))(mux)); err != nil {
 		slog.Error("serve", "err", err)
