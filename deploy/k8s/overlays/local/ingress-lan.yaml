@@ -1,0 +1,4 @@
+# Accept any Host so a browser on the Mac can use the server IP.
+# atlas.local still matches because the host field is gone.
+- op: remove
+  path: /spec/rules/0/host

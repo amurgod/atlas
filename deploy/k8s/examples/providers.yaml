@@ -1,0 +1,61 @@
+# Apply after the Provider CRD is installed:
+#   kubectl apply -f deploy/k8s/examples/providers.yaml
+# The chat dropdown lists one entry per resource. A chat send uses the model
+# whose usage is "chat". Other callers can ask for "reasoning".
+apiVersion: atlas.platform/v1
+kind: Provider
+metadata:
+  name: openai
+  namespace: atlas
+spec:
+  type: openai
+  apiKey: ""
+  models:
+    - name: gpt-4o
+      usage: reasoning
+      temperature: 0.5
+    - name: gpt-4o-mini
+      usage: chat
+      temperature: 0.7
+---
+apiVersion: atlas.platform/v1
+kind: Provider
+metadata:
+  name: claude
+  namespace: atlas
+spec:
+  type: anthropic
+  apiKey: ""
+  models:
+    - name: claude-sonnet-4-5
+      usage: reasoning
+      temperature: 0.5
+    - name: claude-haiku-4-5-20251001
+      usage: chat
+      temperature: 0.4
+---
+apiVersion: atlas.platform/v1
+kind: Provider
+metadata:
+  name: grok
+  namespace: atlas
+spec:
+  type: grok
+  apiKey: ""
+  models:
+    - name: grok-3
+      usage: chat
+      temperature: 0.6
+---
+apiVersion: atlas.platform/v1
+kind: Provider
+metadata:
+  name: gemini
+  namespace: atlas
+spec:
+  type: gemini
+  apiKey: ""
+  models:
+    - name: gemini-2.5-flash
+      usage: chat
+      temperature: 0.6

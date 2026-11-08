@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+secretGenerator:
+  - name: atlas-secrets
+    envs:
+      - secrets.env
+    options:
+      disableNameSuffixHash: true
+patches:
+  - path: ingress-alb.yaml
+  - path: notify-ses.yaml
+  - path: replicas.yaml
+images:
+  - name: atlas/user
+    newName: ACCOUNT.dkr.ecr.us-west-2.amazonaws.com/atlas-user
+    newTag: latest
+  - name: atlas/knowledge
+    newName: ACCOUNT.dkr.ecr.us-west-2.amazonaws.com/atlas-knowledge
+    newTag: latest
+  - name: atlas/planner
+    newName: ACCOUNT.dkr.ecr.us-west-2.amazonaws.com/atlas-planner
+    newTag: latest
+  - name: atlas/notification
+    newName: ACCOUNT.dkr.ecr.us-west-2.amazonaws.com/atlas-notification
+    newTag: latest
+  - name: atlas/llm-gateway
+    newName: ACCOUNT.dkr.ecr.us-west-2.amazonaws.com/atlas-llm-gateway
+    newTag: latest
+  - name: atlas/ui
+    newName: ACCOUNT.dkr.ecr.us-west-2.amazonaws.com/atlas-ui
+    newTag: latest
+  - name: atlas/open-webui-engine
+    newName: ACCOUNT.dkr.ecr.us-west-2.amazonaws.com/atlas-open-webui-engine
+    newTag: latest

@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-webui-engine
+spec:
+  ports:
+    - port: 8080
+      name: http
+      targetPort: engine
+    - port: 8081
+      name: webui
+      targetPort: webui
+  selector:
+    app: open-webui-engine
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui-engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-webui-engine
+  template:
+    metadata:
+      labels:
+        app: open-webui-engine
+    spec:
+      containers:
+        - name: webui
+          image: ghcr.io/open-webui/open-webui:main
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: webui
+              containerPort: 8080
+          env:
+            - name: ENABLE_OLLAMA_API
+              value: "false"
+            - name: ENABLE_OPENAI_API
+              value: "true"
+            - name: ENABLE_PERSISTENT_CONFIG
+              value: "false"
+            - name: WEBUI_AUTH
+              value: "false"
+            - name: WEBUI_SECRET_KEY
+              value: atlas-open-webui-engine
+            - name: OPENAI_API_BASE_URL
+              value: http://llm-gateway:8080/v1
+            - name: OPENAI_API_KEY
+              value: atlas
+            - name: RAG_EMBEDDING_ENGINE
+              value: openai
+            - name: RAG_OPENAI_API_BASE_URL
+              value: http://llm-gateway:8080/v1
+            - name: RAG_OPENAI_API_KEY
+              value: atlas
+          volumeMounts:
+            - name: webui-data
+              mountPath: /app/backend/data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: webui
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+        - name: engine
+          image: atlas/open-webui-engine:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: engine
+              containerPort: 8090
+          env:
+            - name: HTTP_ADDR
+              value: ":8090"
+            - name: OPEN_WEBUI_URL
+              value: http://127.0.0.1:8080
+            - name: VECTOR_BACKEND
+              value: pgvector
+          envFrom:
+            - configMapRef:
+                name: atlas-config
+            - secretRef:
+                name: atlas-secrets
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: engine
+            initialDelaySeconds: 8
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: webui-data
+          emptyDir: {}

@@ -1,0 +1,21 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: atlas
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      # LAN access from the Mac. 8080 stays with Docker Compose.
+      - containerPort: 80
+        hostPort: 18082
+        listenAddress: "0.0.0.0"
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 18443
+        listenAddress: "0.0.0.0"
+        protocol: TCP

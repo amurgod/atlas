@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-config
+data:
+  NOTIFY_MODE: "ses"
+  AWS_REGION: "us-west-2"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: notification
+  annotations:
+    eks.amazonaws.com/role-arn: IRSA_ROLE_ARN

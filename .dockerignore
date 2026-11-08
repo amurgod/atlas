@@ -1,0 +1,13 @@
+.git
+.github
+bin
+dist
+node_modules
+.terraform
+*.tfstate
+ui/node_modules
+ui/dist
+deploy/aws
+README.md
+**/.env
+**/*.md

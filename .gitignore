@@ -1,0 +1,17 @@
+bin/
+dist/
+node_modules/
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+*.swp
+.DS_Store
+ui/dist
+cover.out
+*.log
