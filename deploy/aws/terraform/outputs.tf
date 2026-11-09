@@ -23,6 +23,14 @@ output "notification_role_arn" {
   value = aws_iam_role.notification.arn
 }
 
+output "engine_role_arn" {
+  value = aws_iam_role.engine.arn
+}
+
+output "docs_bucket" {
+  value = aws_s3_bucket.docs.bucket
+}
+
 output "configure_kubectl" {
   value = "aws eks update-kubeconfig --region ${var.region} --name ${module.eks.cluster_name}"
 }

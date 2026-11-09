@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-config
+data:
+  S3_BUCKET: "DOCS_BUCKET"
+  S3_REGION: "us-west-2"

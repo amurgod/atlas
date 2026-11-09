@@ -1,14 +1,15 @@
 # Atlas on AWS (EKS)
 
-This overlay is meant to run the same Kubernetes manifests as local Kind, with three substitutions: images live in ECR, Postgres is RDS, and the notification service sends mail through SES using IRSA.
+This overlay is meant to run the same Kubernetes manifests as local Kind, with four substitutions: images live in ECR, Postgres is RDS, the notification service sends mail through SES using IRSA, and open-webui-engine stores documents in S3 using IRSA.
 
 ```
 React UI ──► ALB ──► gateway (nginx)
                        ├─ user / knowledge / planner / notify
+                       ├─ open-webui-engine ── S3
                        └─ ui
 Go services ── NATS JetStream ── notification ── SES / Twilio
 Knowledge / planner ── llm-gateway ── Anthropic Messages, OpenAI-compatible Completions, Voyage
-All stateful data except NATS ── RDS Postgres 16 + pgvector
+All stateful data except NATS and document bytes ── RDS Postgres 16 + pgvector
 ```
 
 ## 1. Prerequisites
@@ -36,13 +37,13 @@ Install the AWS Load Balancer Controller in the cluster (once per cluster) follo
 ```bash
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 REGION=us-west-2
-for svc in user knowledge planner notification llm-gateway; do
+for svc in user knowledge planner notification llm-gateway open-webui-engine; do
   docker build --build-arg SERVICE=$svc -t atlas/$svc:local -f services/Dockerfile .
 done
 docker build -t atlas/ui:local ui
 
 aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT.dkr.ecr.$REGION.amazonaws.com
-for svc in user knowledge planner notification llm-gateway ui; do
+for svc in user knowledge planner notification llm-gateway open-webui-engine ui; do
   docker tag atlas/$svc:local $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/atlas-$svc:latest
   docker push $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/atlas-$svc:latest
 done
@@ -52,13 +53,15 @@ done
 
 ## 4. Fill the overlay
 
-1. Copy `deploy/k8s/overlays/aws/secrets.env.example` over `secrets.env` if needed.
+1. Copy `deploy/k8s/overlays/aws/secrets.env.example` to `secrets.env`. It is gitignored, so it stays on your machine.
 2. Set `DATABASE_URL` from `terraform output -raw database_url`.
 3. Set `JWT_SECRET`, `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `SES_FROM`.
 4. In `kustomization.yaml`, replace `ACCOUNT` in every ECR image name.
 5. In `ingress-alb.yaml`, replace `CERTIFICATE_ARN`.
-6. In `notify-ses.yaml`, replace `IRSA_ROLE_ARN` with `terraform output -raw notification_role_arn`.
-7. Set the ingress host to your DNS name.
+6. In `notify-ses-sa.yaml`, replace `IRSA_ROLE_ARN` with `terraform output -raw notification_role_arn`.
+7. In `engine-serviceaccount.yaml`, replace `ENGINE_IRSA_ROLE_ARN` with `terraform output -raw engine_role_arn`.
+8. In `s3-config.yaml`, replace `DOCS_BUCKET` with `terraform output -raw docs_bucket`.
+9. Set the ingress host to your DNS name.
 
 Verify SES identities (domain or `SES_FROM` address) in the same region. Until SES is out of sandbox, destination addresses must be verified too.
 
@@ -78,6 +81,7 @@ On first boot, knowledge-service runs `CREATE EXTENSION IF NOT EXISTS vector`. R
 | Go services, UI, gateway | EKS |
 | NATS JetStream | EKS (ephemeral `emptyDir`; swap for a PVC if you need durable replay across node death) |
 | Postgres + pgvector | RDS |
+| Document bytes | S3 via IRSA on `open-webui-engine` |
 | Embeddings / completions | Voyage + Anthropic APIs via llm-gateway |
 | Email | SES via IRSA on `notification` |
 | SMS | Twilio if `NOTIFY_MODE=twilio` and Twilio env is set |

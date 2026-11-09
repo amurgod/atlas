@@ -107,7 +107,7 @@ Tear down with `make undeploy` and `kind delete cluster --name atlas`.
 
 Step-by-step: [deploy/aws/README.md](deploy/aws/README.md).
 
-Short version: `terraform apply` in `deploy/aws/terraform` creates EKS, RDS Postgres 16, ECR, and an IRSA role for SES. Push images, fill `deploy/k8s/overlays/aws/secrets.env` plus the `ACCOUNT` / ACM / IRSA placeholders, install the AWS Load Balancer Controller, then `kubectl apply -k deploy/k8s/overlays/aws`.
+Short version: `terraform apply` in `deploy/aws/terraform` creates EKS, RDS Postgres 16, ECR, an S3 document bucket, and IRSA roles for SES and S3. Push images, create `deploy/k8s/overlays/aws/secrets.env` from its `.example` and fill it, set the `ACCOUNT` / ACM / IRSA / bucket placeholders, install the AWS Load Balancer Controller, then `kubectl apply -k deploy/k8s/overlays/aws`.
 
 ## Messaging
 

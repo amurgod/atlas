@@ -1,7 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: atlas
 resources:
   - ../../base
+  - engine-serviceaccount.yaml
 secretGenerator:
   - name: atlas-secrets
     envs:
@@ -11,7 +13,22 @@ secretGenerator:
 patches:
   - path: ingress-alb.yaml
   - path: notify-ses.yaml
-  - path: replicas.yaml
+  - path: notify-ses-sa.yaml
+  - path: s3-config.yaml
+  - path: engine-serviceaccount-patch.yaml
+replicas:
+  - name: user-service
+    count: 2
+  - name: knowledge-service
+    count: 2
+  - name: planner-service
+    count: 2
+  - name: llm-gateway
+    count: 2
+  - name: ui
+    count: 2
+  - name: gateway
+    count: 2
 images:
   - name: atlas/user
     newName: ACCOUNT.dkr.ecr.us-west-2.amazonaws.com/atlas-user

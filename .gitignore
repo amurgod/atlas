@@ -15,3 +15,5 @@ node_modules/
 ui/dist
 cover.out
 *.log
+secrets.env
+*.tfvars
